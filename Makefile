@@ -43,6 +43,7 @@ down: docker-compose down -f docker-compose.yml
 
 version: build
 	$(BIN)/brutforce version
+	
 test:
 	go test -race ./internal/... ./cmd/...
 
@@ -62,4 +63,4 @@ install-goose:
 lint: install-lint-deps
 	golangci-lint run ./...
 
-.PHONY: build run build-img run-img version test lint
+PHONY: build run build-img run-img version test lint
