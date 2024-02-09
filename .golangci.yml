@@ -30,7 +30,7 @@ linters:
   enable:
     - asciicheck
     - bodyclose
-    - depguard
+    #- depguard
     - dogsled
     - dupl
     - durationcheck

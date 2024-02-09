@@ -40,7 +40,7 @@ type IPItem struct {
 	IPto   int
 }
 
-func New(ctx context.Context, logg logger.Logg, config config.Config) (Storage, error) {
+func New(logg logger.Logg, config config.Config) (Storage, error) {
 	stor := &storage{
 		connStr: config.Database.ConnectString,
 	}

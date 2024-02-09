@@ -40,7 +40,7 @@ func main() {
 	wg := sync.WaitGroup{}
 	config := config.NewConfig(configFile)
 	logg := logger.New(config.Logger, "Anti-bruteforce:")
-	storage, err := storage.New(ctx, logg, config)
+	storage, err := storage.New(logg, config)
 	if err != nil {
 		return
 	}
@@ -53,12 +53,12 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		serverHTTP.Start(ctx)
+		serverHTTP.Start()
 	}()
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		serverGRPC.Start(ctx)
+		serverGRPC.Start()
 	}()
 
 	<-ctx.Done()

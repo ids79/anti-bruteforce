@@ -29,7 +29,7 @@ func NewServer(backets *app.Backets, iplist *app.IPList, logg logger.Logg, confi
 	}
 }
 
-func (s *Server) Start(ctx context.Context) error {
+func (s *Server) Start() error {
 	handler := s.loggingMiddleware()
 	server := &http.Server{
 		Addr:         s.conf.HTTPServer.Address,

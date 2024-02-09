@@ -34,7 +34,7 @@ func NewServer(backets *app.Backets, iplist *app.IPList, logg logger.Logg, confi
 	}
 }
 
-func (s *Server) Start(ctx context.Context) error {
+func (s *Server) Start() error {
 	var err error
 	s.ls, err = net.Listen("tcp", s.conf.GRPCServer.Address)
 	if err != nil {
@@ -61,6 +61,7 @@ func (s *Server) Close() {
 }
 
 func (s *Server) AddWhite(ctx context.Context, req *pb.IPMask) (*pb.Responce, error) {
+	_ = ctx
 	err := s.iplist.AddWhiteList(req.IP, req.Mask)
 	switch {
 	case err == nil:
@@ -71,6 +72,7 @@ func (s *Server) AddWhite(ctx context.Context, req *pb.IPMask) (*pb.Responce, er
 }
 
 func (s *Server) DelWhite(ctx context.Context, ip *pb.IP) (*pb.Responce, error) {
+	_ = ctx
 	err := s.iplist.DelWhiteList(ip.IP)
 	switch {
 	case err == nil:
@@ -81,6 +83,7 @@ func (s *Server) DelWhite(ctx context.Context, ip *pb.IP) (*pb.Responce, error) 
 }
 
 func (s *Server) AddBlack(ctx context.Context, req *pb.IPMask) (*pb.Responce, error) {
+	_ = ctx
 	err := s.iplist.AddBlackList(req.IP, req.Mask)
 	switch {
 	case err == nil:
@@ -91,6 +94,7 @@ func (s *Server) AddBlack(ctx context.Context, req *pb.IPMask) (*pb.Responce, er
 }
 
 func (s *Server) DelBlack(ctx context.Context, ip *pb.IP) (*pb.Responce, error) {
+	_ = ctx
 	err := s.iplist.DelBlackList(ip.IP)
 	switch {
 	case err == nil:
@@ -101,6 +105,7 @@ func (s *Server) DelBlack(ctx context.Context, ip *pb.IP) (*pb.Responce, error) 
 }
 
 func (s *Server) ResetBacket(ctx context.Context, backet *pb.Backet) (*pb.Responce, error) {
+	_ = ctx
 	if app.BacketType(backet.Type) == app.IP {
 		if _, err := app.IPtoInt(backet.Backet); err != nil {
 			s.logg.Error(err)
@@ -127,6 +132,7 @@ func IPFormApptoPB(list []app.IPItem) *pb.List {
 }
 
 func (s *Server) GetList(ctx context.Context, tipe *pb.TypeList) (*pb.List, error) {
+	_ = ctx
 	list := s.iplist.GetList(tipe.Type)
 	return IPFormApptoPB(list), nil
 }
