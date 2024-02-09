@@ -8,7 +8,7 @@ service CLiApi {
   rpc DelWhite (IP) returns (Responce) {}
   rpc AddBlack (IPMask) returns (Responce) {}
   rpc DelBlack (IP) returns (Responce) {}
-  rpc ResetBacket (TypeReset) returns (Responce) {}
+  rpc ResetBacket (Backet) returns (Responce) {}
   rpc GetList (TypeList) returns (List) {} 
 }
 
@@ -20,7 +20,7 @@ message IPitem {
 }
 
 message List {
-    repeated IPitem Item = 1;
+    repeated IPitem Items = 1;
 }
 
 message IPMask {
@@ -32,12 +32,13 @@ message IP {
     string IP = 1;
 }
 
-message TypeReset {
-    string type = 1;
+message Backet {
+    string Backet = 1;
+    string type = 2;
 }
 
 message TypeList {
-    string type = 1;
+    string Type = 1;
 }
 
 message Responce {

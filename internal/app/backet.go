@@ -13,12 +13,12 @@ import (
 
 var ErrBacketNotFound = errors.New("the backet is not found")
 
-type backetType string
+type BacketType string
 
 const (
-	LOGIN    backetType = "LOGIN"
-	PASSWORD backetType = "PASS"
-	IP       backetType = "IP"
+	LOGIN    BacketType = "LOGIN"
+	PASSWORD BacketType = "PASS"
+	IP       BacketType = "IP"
 )
 
 type backet struct {
@@ -41,20 +41,20 @@ func (b *backet) resetBacket() {
 }
 
 type WorkWithBackets interface {
-	AccessVerification(key string, t backetType) (bool, error)
-	ResetBacket(key string, t backetType) error
+	AccessVerification(key string, t BacketType) (bool, error)
+	ResetBacket(key string, t BacketType) error
 }
 
 type Backets struct {
 	logg        logger.Logg
-	freq        map[backetType]int
+	freq        map[BacketType]int
 	expireLimit int
 	mu          sync.RWMutex
 	backets     map[string]*backet
 }
 
 func NewBackets(ctx context.Context, logg logger.Logg, conf *config.Config) *Backets {
-	freq := make(map[backetType]int)
+	freq := make(map[BacketType]int)
 	freq[LOGIN] = conf.Limits.N
 	freq[PASSWORD] = conf.Limits.M
 	freq[IP] = conf.Limits.K
@@ -86,7 +86,7 @@ func (b *Backets) delValue(key string) {
 	delete(b.backets, key)
 }
 
-func (b *Backets) AccessVerification(key string, t backetType) (bool, error) {
+func (b *Backets) AccessVerification(key string, t BacketType) (bool, error) {
 	if key == "" {
 		b.logg.Error(t, ": parametr was not faund")
 		return false, fmt.Errorf("%w: parametr %s or mask not found", ErrBadRequest, t)
@@ -101,12 +101,13 @@ func (b *Backets) AccessVerification(key string, t backetType) (bool, error) {
 	return bac.successfulAttempt(), nil
 }
 
-func (b *Backets) ResetBacket(key string, t backetType) error {
+func (b *Backets) ResetBacket(key string, t BacketType) error {
 	key = string(t) + key
 	if val, ok := b.getValue(key); ok {
 		val.resetBacket()
 		return nil
 	}
+	b.logg.Info(fmt.Errorf("%s: %w", key, ErrBacketNotFound))
 	return ErrBacketNotFound
 }
 

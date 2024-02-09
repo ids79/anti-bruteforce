@@ -139,7 +139,7 @@ func (s *storage) AddBlackList(ctx context.Context, item IPItem) error {
 	if err != nil {
 		return err
 	}
-	query = `insert into blacklist (ip, mask, ipfrom, ipto) values(:IP, :Mask, :IPfrom, :IPto)`
+	query = `insert into blacklist (ip, mask, ipfrom, ipto) values(:ip, :mask, :ipfrom, :ipto)`
 	_, err = s.conn.NamedQueryContext(ctx, query, item)
 	if err != nil {
 		return err

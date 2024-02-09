@@ -15,6 +15,8 @@ import (
 
 var ErrBadRequest = errors.New("entered invalid parameter")
 
+var ErrIncorrectIP = errors.New("incorrect IP address")
+
 type WorkWithIPList interface {
 	AddWhiteList(ipStr string, maskStr string) error
 	DelWhiteList(ipStr string) error
@@ -65,23 +67,23 @@ func checkParam(ipStr, maskStr string, logg logger.Logg) bool {
 func IPtoInt(val string) (int, error) {
 	m := strings.Split(val, ".")
 	if len(m) != 4 {
-		return 0, errors.New("incorrect IP address")
+		return 0, ErrIncorrectIP
 	}
 	ip1, err := strconv.Atoi(m[0])
 	if err != nil {
-		return 0, errors.New("incorrect IP address")
+		return 0, ErrIncorrectIP
 	}
 	ip2, err := strconv.Atoi(m[1])
 	if err != nil {
-		return 0, errors.New("incorrect IP address")
+		return 0, ErrIncorrectIP
 	}
 	ip3, err := strconv.Atoi(m[2])
 	if err != nil {
-		return 0, errors.New("incorrect IP address")
+		return 0, ErrIncorrectIP
 	}
 	ip4, err := strconv.Atoi(m[3])
 	if err != nil {
-		return 0, errors.New("incorrect IP address")
+		return 0, ErrIncorrectIP
 	}
 	return ip1<<24 + ip2<<16 + ip3<<8 + ip4, nil
 }

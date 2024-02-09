@@ -2,6 +2,8 @@ package internalgrpc
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net"
 
 	"github.com/ids79/anti-bruteforcer/internal/app"
@@ -68,12 +70,63 @@ func (s *Server) AddWhite(ctx context.Context, req *pb.IPMask) (*pb.Responce, er
 	}
 }
 
-func (s *Server) DelWhite(ctx context.Context, IP *pb.IP) (*pb.Responce, error) {
-	err := s.iplist.DelWhiteList(IP.IP)
+func (s *Server) DelWhite(ctx context.Context, ip *pb.IP) (*pb.Responce, error) {
+	err := s.iplist.DelWhiteList(ip.IP)
 	switch {
 	case err == nil:
 		return &pb.Responce{Result: "IP was deleted from the white list"}, nil
 	default:
 		return &pb.Responce{Result: err.Error()}, status.Errorf(codes.InvalidArgument, "Invalid parameters")
 	}
+}
+
+func (s *Server) AddBlack(ctx context.Context, req *pb.IPMask) (*pb.Responce, error) {
+	err := s.iplist.AddBlackList(req.IP, req.Mask)
+	switch {
+	case err == nil:
+		return &pb.Responce{Result: "IP was added in the black list"}, nil
+	default:
+		return &pb.Responce{Result: err.Error()}, status.Errorf(codes.InvalidArgument, "Invalid parameters")
+	}
+}
+
+func (s *Server) DelBlack(ctx context.Context, ip *pb.IP) (*pb.Responce, error) {
+	err := s.iplist.DelBlackList(ip.IP)
+	switch {
+	case err == nil:
+		return &pb.Responce{Result: "IP was deleted from the black list"}, nil
+	default:
+		return &pb.Responce{Result: err.Error()}, status.Errorf(codes.InvalidArgument, "Invalid parameters")
+	}
+}
+
+func (s *Server) ResetBacket(ctx context.Context, backet *pb.Backet) (*pb.Responce, error) {
+	if app.BacketType(backet.Type) == app.IP {
+		if _, err := app.IPtoInt(backet.Backet); err != nil {
+			s.logg.Error(err)
+			return &pb.Responce{Result: err.Error()}, status.Errorf(codes.InvalidArgument, "Invalid parameters")
+		}
+	}
+	if errors.Is(s.backets.ResetBacket(backet.Backet, app.BacketType(backet.Type)), app.ErrBacketNotFound) {
+		return &pb.Responce{Result: fmt.Sprintf("%s backet not found", backet.Type)}, nil
+	}
+	return &pb.Responce{Result: fmt.Sprintf("%s backet was reset", backet.Type)}, nil
+}
+
+func IPFormApptoPB(list []app.IPItem) *pb.List {
+	l := make([]*pb.IPitem, len(list))
+	for i, it := range list {
+		l[i] = &pb.IPitem{
+			IP:     it.IP,
+			Mask:   it.Mask,
+			IPfrom: it.IPfrom,
+			IPto:   it.IPto,
+		}
+	}
+	return &pb.List{Items: l}
+}
+
+func (s *Server) GetList(ctx context.Context, tipe *pb.TypeList) (*pb.List, error) {
+	list := s.iplist.GetList(tipe.Type)
+	return IPFormApptoPB(list), nil
 }

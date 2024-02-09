@@ -14,6 +14,7 @@ import (
 	"github.com/ids79/anti-bruteforcer/internal/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
 
 type CLI struct {
@@ -73,73 +74,102 @@ func printList(list []app.IPItem) {
 	}
 }
 
+func checkParams(params []string, num int) bool {
+	if len(params) < num {
+		fmt.Println("not enough parameters")
+		return false
+	}
+	return true
+}
+
+func IPFormPBtoApp(list *pb.List) []app.IPItem {
+	l := make([]app.IPItem, len(list.Items))
+	for i, it := range list.Items {
+		l[i] = app.IPItem{
+			IP:     it.IP,
+			Mask:   it.Mask,
+			IPfrom: it.IPfrom,
+			IPto:   it.IPto,
+		}
+	}
+	return l
+}
+
+func setMetadata(ctx context.Context, method string) context.Context {
+	md := metadata.New(nil)
+	md.Set("method", method)
+	fmt.Println(method)
+	return metadata.NewOutgoingContext(ctx, md)
+}
+
 func (c *CLI) performCommand(command string, params []string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
 	switch command {
 	case "addw":
-		if len(params) < 2 {
-			fmt.Println("not enough parameters")
+		if !checkParams(params, 2) {
 			break
 		}
+		ctx = setMetadata(ctx, "add white")
 		res, err := c.client.AddWhite(ctx, &pb.IPMask{IP: params[0], Mask: params[1]})
-		if err != nil {
-			c.logg.Error(err)
-		}
-		fmt.Println(res)
-	// case "addb":
-	// 	if len(params) < 2 {
-	// 		fmt.Println("not enough parameters")
-	// 		break
-	// 	}
-	// 	err := c.iplist.AddBlackList(params[0], params[1])
-	// 	if errors.Is(err, app.ErrBadRequest) {
-	// 		fmt.Println(err)
-	// 	}
-	case "delw":
-		if len(params) != 1 {
-			fmt.Println("not enough parameters")
+		fmt.Println(res, err)
+	case "addb":
+		if !checkParams(params, 2) {
 			break
 		}
+		ctx = setMetadata(ctx, "add black")
+		res, err := c.client.AddBlack(ctx, &pb.IPMask{IP: params[0], Mask: params[1]})
+		fmt.Println(res, err)
+	case "delw":
+		if !checkParams(params, 1) {
+			break
+		}
+		ctx = setMetadata(ctx, "del white")
 		res, err := c.client.DelWhite(ctx, &pb.IP{IP: params[0]})
+		fmt.Println(res, err)
+	case "delb":
+		if !checkParams(params, 1) {
+			break
+		}
+		ctx = setMetadata(ctx, "del black")
+		res, err := c.client.DelBlack(ctx, &pb.IP{IP: params[0]})
+		fmt.Println(res, err)
+	case "resi":
+		if !checkParams(params, 1) {
+			break
+		}
+		ctx = setMetadata(ctx, "reset backet")
+		res, err := c.client.ResetBacket(ctx, &pb.Backet{Backet: params[0], Type: "IP"})
+		fmt.Println(res, err)
+	case "resl":
+		if !checkParams(params, 1) {
+			break
+		}
+		ctx = setMetadata(ctx, "reset backet")
+		res, err := c.client.ResetBacket(ctx, &pb.Backet{Backet: params[0], Type: "LOGIN"})
+		fmt.Println(res, err)
+	case "resp":
+		if !checkParams(params, 1) {
+			break
+		}
+		ctx = setMetadata(ctx, "reset backet")
+		res, err := c.client.ResetBacket(ctx, &pb.Backet{Backet: params[0], Type: "PASS"})
+		fmt.Println(res, err)
+	case "getw":
+		ctx = setMetadata(ctx, "get white list")
+		list, err := c.client.GetList(ctx, &pb.TypeList{Type: "w"})
 		if err != nil {
 			c.logg.Error(err)
 		}
-		fmt.Println(res)
-	// case "delb":
-	// 	if len(params) != 1 {
-	// 		fmt.Println("not enough parameters")
-	// 		break
-	// 	}
-	// 	err := c.iplist.DelBlackList(params[0])
-	// 	if errors.Is(err, app.ErrBadRequest) {
-	// 		fmt.Println(err)
-	// 	}
-	// case "resi":
-	// 	if c.backets.ResetBacket(params[0], app.IP) != nil {
-	// 		fmt.Println("IP backet was no found in backets")
-	// 		break
-	// 	}
-	// 	fmt.Println(("IP backet was reset"))
-	// case "resl":
-	// 	if c.backets.ResetBacket(params[0], app.LOGIN) != nil {
-	// 		fmt.Println("login backet was no found in backets")
-	// 		break
-	// 	}
-	// 	fmt.Println(("login backet was reset"))
-	// case "resp":
-	// 	if c.backets.ResetBacket(params[0], app.PASSWORD) != nil {
-	// 		fmt.Println("password backet was no found in backets")
-	// 		break
-	// 	}
-	// 	fmt.Println(("password backet was reset"))
-	// case "getw":
-	// 	list := c.iplist.GetList("w")
-	// 	printList(list)
-	// case "getb":
-	// 	list := c.iplist.GetList("b")
-	// 	printList(list)
+		printList(IPFormPBtoApp(list))
+	case "getb":
+		ctx = setMetadata(ctx, "get black list")
+		list, err := c.client.GetList(ctx, &pb.TypeList{Type: "b"})
+		if err != nil {
+			c.logg.Error(err)
+		}
+		printList(IPFormPBtoApp(list))
 	default:
 		fmt.Println("Entered command is not correct")
 	}

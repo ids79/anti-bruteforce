@@ -35,7 +35,7 @@ type CLiApiClient interface {
 	DelWhite(ctx context.Context, in *IP, opts ...grpc.CallOption) (*Responce, error)
 	AddBlack(ctx context.Context, in *IPMask, opts ...grpc.CallOption) (*Responce, error)
 	DelBlack(ctx context.Context, in *IP, opts ...grpc.CallOption) (*Responce, error)
-	ResetBacket(ctx context.Context, in *TypeReset, opts ...grpc.CallOption) (*Responce, error)
+	ResetBacket(ctx context.Context, in *Backet, opts ...grpc.CallOption) (*Responce, error)
 	GetList(ctx context.Context, in *TypeList, opts ...grpc.CallOption) (*List, error)
 }
 
@@ -83,7 +83,7 @@ func (c *cLiApiClient) DelBlack(ctx context.Context, in *IP, opts ...grpc.CallOp
 	return out, nil
 }
 
-func (c *cLiApiClient) ResetBacket(ctx context.Context, in *TypeReset, opts ...grpc.CallOption) (*Responce, error) {
+func (c *cLiApiClient) ResetBacket(ctx context.Context, in *Backet, opts ...grpc.CallOption) (*Responce, error) {
 	out := new(Responce)
 	err := c.cc.Invoke(ctx, CLiApi_ResetBacket_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -109,7 +109,7 @@ type CLiApiServer interface {
 	DelWhite(context.Context, *IP) (*Responce, error)
 	AddBlack(context.Context, *IPMask) (*Responce, error)
 	DelBlack(context.Context, *IP) (*Responce, error)
-	ResetBacket(context.Context, *TypeReset) (*Responce, error)
+	ResetBacket(context.Context, *Backet) (*Responce, error)
 	GetList(context.Context, *TypeList) (*List, error)
 	mustEmbedUnimplementedCLiApiServer()
 }
@@ -130,7 +130,7 @@ func (UnimplementedCLiApiServer) AddBlack(context.Context, *IPMask) (*Responce, 
 func (UnimplementedCLiApiServer) DelBlack(context.Context, *IP) (*Responce, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DelBlack not implemented")
 }
-func (UnimplementedCLiApiServer) ResetBacket(context.Context, *TypeReset) (*Responce, error) {
+func (UnimplementedCLiApiServer) ResetBacket(context.Context, *Backet) (*Responce, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ResetBacket not implemented")
 }
 func (UnimplementedCLiApiServer) GetList(context.Context, *TypeList) (*List, error) {
@@ -222,7 +222,7 @@ func _CLiApi_DelBlack_Handler(srv interface{}, ctx context.Context, dec func(int
 }
 
 func _CLiApi_ResetBacket_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TypeReset)
+	in := new(Backet)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -234,7 +234,7 @@ func _CLiApi_ResetBacket_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: CLiApi_ResetBacket_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CLiApiServer).ResetBacket(ctx, req.(*TypeReset))
+		return srv.(CLiApiServer).ResetBacket(ctx, req.(*Backet))
 	}
 	return interceptor(ctx, in, info, handler)
 }
