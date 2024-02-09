@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package event;
+option go_package = "./;pb";
+
+service CLiApi {
+  rpc AddWhite (IPMask) returns (Responce) {}
+  rpc DelWhite (IP) returns (Responce) {}
+  rpc AddBlack (IPMask) returns (Responce) {}
+  rpc DelBlack (IP) returns (Responce) {}
+  rpc ResetBacket (TypeReset) returns (Responce) {}
+  rpc GetList (TypeList) returns (List) {} 
+}
+
+message IPitem {
+	string IP      = 1;   
+	string Mask    = 2;
+	string IPfrom  = 3;
+    string IPto    = 4;   
+}
+
+message List {
+    repeated IPitem Item = 1;
+}
+
+message IPMask {
+    string IP   = 1;
+    string Mask = 2; 
+}
+
+message IP {
+    string IP = 1;
+}
+
+message TypeReset {
+    string type = 1;
+}
+
+message TypeList {
+    string type = 1;
+}
+
+message Responce {
+    string Result = 1; 
+}
+

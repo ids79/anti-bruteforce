@@ -1,0 +1,20 @@
+expire-limit = 60
+tick-interval = 500
+
+[bruteforce-limits]
+n = 10
+m = 100
+k = 1000
+
+[logger]
+level = "INFO"
+log_encoding = "console"
+
+[database]
+connect_str = "postgres://ids79:ids79@pg:5432/bruteforce"
+
+[http-server]
+address = "0.0.0.0:8081"
+
+[grpc-server]
+address = "0.0.0.0:5051"

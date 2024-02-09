@@ -1,0 +1,68 @@
+version: "2.1"
+services:
+  mq:
+    image: rabbitmq:3.10.7-management
+    container_name: rabbitmq
+    restart: always
+    environment:
+      - RABBITMQ_DEFAULT_USER=ids79
+      - RABBITMQ_DEFAULT_PASS=29102087
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit log_levels [{connection,error},{default,error}] disk_free_limit 2147483648
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 25s  
+    ports:
+      - 15672:15672      
+  pg:
+    image: postgres:latest
+    container_name: postgres 
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    #  - POSTGRES_DB=calendar
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 25s 
+    volumes:
+    - ./deployments/sql:/docker-entrypoint-initdb.d   
+  calendar:
+    build:
+      context: .
+      dockerfile: build/Dockerfile_calendar
+    container_name: calendar
+    depends_on: 
+      - pg  
+    depends_on:
+      pg:     
+        condition: service_healthy 
+    ports:
+      - 8081:8081
+      - 5051:5051    
+  scheduler:
+    build:
+      context: .
+      dockerfile: build/Dockerfile_scheduler
+    container_name: scheduler
+    depends_on: 
+      - mq
+      - pg  
+    depends_on:
+      pg:     
+        condition: service_healthy 
+  sender:
+    build:
+      context: .
+      dockerfile: build/Dockerfile_sender
+    container_name: sender
+    depends_on: 
+      - mq
+    depends_on:
+      mq:     
+        condition: service_healthy 
