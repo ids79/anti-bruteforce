@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"github.com/ids79/anti-bruteforcer/internal/config"
+	"github.com/ids79/anti-bruteforce/internal/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ids79/anti-bruteforcer/internal/config"
-	"github.com/ids79/anti-bruteforcer/internal/logger"
+	"github.com/ids79/anti-bruteforce/internal/config"
+	"github.com/ids79/anti-bruteforce/internal/logger"
 	"github.com/jmoiron/sqlx"
 	"github.com/pressly/goose/v3"
 )

@@ -8,12 +8,12 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/ids79/anti-bruteforcer/internal/app"
-	"github.com/ids79/anti-bruteforcer/internal/config"
-	"github.com/ids79/anti-bruteforcer/internal/logger"
-	internalgrpc "github.com/ids79/anti-bruteforcer/internal/server/grpc"
-	internalhttp "github.com/ids79/anti-bruteforcer/internal/server/http"
-	"github.com/ids79/anti-bruteforcer/internal/storage"
+	"github.com/ids79/anti-bruteforce/internal/app"
+	"github.com/ids79/anti-bruteforce/internal/config"
+	"github.com/ids79/anti-bruteforce/internal/logger"
+	internalgrpc "github.com/ids79/anti-bruteforce/internal/server/grpc"
+	internalhttp "github.com/ids79/anti-bruteforce/internal/server/http"
+	"github.com/ids79/anti-bruteforce/internal/storage"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 

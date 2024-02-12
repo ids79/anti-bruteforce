@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ids79/anti-bruteforcer/internal/config"
-	"github.com/ids79/anti-bruteforcer/internal/logger"
+	"github.com/ids79/anti-bruteforce/internal/config"
+	"github.com/ids79/anti-bruteforce/internal/logger"
 )
 
 var ErrBacketNotFound = errors.New("the backet is not found")

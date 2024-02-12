@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ids79/anti-bruteforcer/internal/app"
-	"github.com/ids79/anti-bruteforcer/internal/config"
-	"github.com/ids79/anti-bruteforcer/internal/logger"
+	"github.com/ids79/anti-bruteforce/internal/app"
+	"github.com/ids79/anti-bruteforce/internal/config"
+	"github.com/ids79/anti-bruteforce/internal/logger"
 )
 
 type Server struct {

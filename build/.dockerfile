@@ -13,7 +13,7 @@ COPY ./ ${CODE_DIR}
 ARG LDFLAGS
 RUN CGO_ENABLED=0 GOOS=linux go build \
         -ldflags "$LDFLAGS" \
-        -o ${BIN_FILE} ${CODE_DIR}cmd/*
+        -o ${BIN_FILE} ${CODE_DIR}cmd/bruteforce/*
 
 # На выходе тонкий образ
 FROM alpine:3.9
