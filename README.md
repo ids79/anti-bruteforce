@@ -38,7 +38,7 @@ http://localhost:8081/auth/?ip=10.10.10.10&login=ids&pass=123</br>
 * 0, если считает что происходит bruteforce.
 
 #### Сброс bucketa: 
-http://localhost:8081/reset-bucket?ip=10.10.10.10&login=ids&pass=123</br>
+http://localhost:8081/reset-bucket/?ip=10.10.10.10&login=ids&pass=123</br>
 Должен очистить bucket-ы соответствующие переданным ip, login и ip.</br>
 Передача параметров методом GET: <em>ip, login pass</em>.</br>
 Возможна передача не всех параметров.
@@ -67,7 +67,7 @@ http://localhost:8081/add-white-list/?ip=10.10.10.50</br>
 - Во время работы сервиса при поступлении очередного IP адреса, сервис проходится по подсетям в черных и белых списках и вычисляет, принадлежит ли IP одной из них.
 
 #### Получения списка whitelist и blacklist: 
-http://localhost:8081/get-list?type=w</br>
+http://localhost:8081/get-list/?type=w</br>
 Получить список подсетей blacklist или whitelist в зависимости от значения параметра type.</br>
 "b" - blacklist, "w" - whitelist.</br>
 Передача параметров методом GET: <em>type</em>.</br>

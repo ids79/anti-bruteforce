@@ -1,0 +1,12 @@
+version: "1.0"
+services:
+  tester:
+    build:
+      context: .
+      dockerfile: building/test.dockerfile
+    container_name: tester
+    depends_on:
+      bruteforce:
+        condition: service_started 
+      pg:     
+        condition: service_healthy

@@ -1,21 +1,14 @@
 package tests
 
 import (
-	"log"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/cucumber/godog"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-const delay = 5 * time.Second
-
 func TestMain(m *testing.M) {
-	log.Printf("wait %s for service availability...", delay)
-	time.Sleep(delay)
-
 	status := godog.TestSuite{
 		Name:                "integration",
 		ScenarioInitializer: InitializeScenario,

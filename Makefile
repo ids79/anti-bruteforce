@@ -2,7 +2,7 @@ BIN := "./bin"
 DOCKER_IMG="brutforce"
 
 GIT_HASH := $(shell git log --format="%h" -n 1)
-LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
+LDFLAGS := -X main.release="develop1" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
 
 generate:
 	rm -rf internal/pb
@@ -28,7 +28,7 @@ build-img:
 	docker build \
 	--build-arg=LDFLAGS="$(LDFLAGS)" \
 	-t $(DOCKER_IMG):1.0.1 \
-	-f build/Dockerfile .
+	-f building/.dockerfile .
 
 run-img: build-img
 	docker run --name $(DOCKER_IMG) \
@@ -48,11 +48,8 @@ test:
 	go test -race ./internal/... ./cmd/...
 
 integation-test:
-	go test -race ./tests/...
+	docker compose --project-directory . -f ./deployments/docker-compose.yml -f ./deployments/docker-compose.test.yml up --build --exit-code-from tester
 
-integat-docker-test:
-	docker compose --project-directory . -f ./deployments/docker-compose.yml -f ./deployments/docker-compose.test.yml up --exit-code-from tester
-	
 install-lint-deps:
 	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.55.2
 

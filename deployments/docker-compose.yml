@@ -18,7 +18,7 @@ services:
   bruteforce:
     build:
       context: ./
-      dockerfile: ./build/.dockerfile
+      dockerfile: ./building/.dockerfile
     container_name: bruteforce
     depends_on:
       pg:     

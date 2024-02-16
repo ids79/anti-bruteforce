@@ -2,9 +2,15 @@ package tests
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/cucumber/godog"
+	"github.com/ids79/anti-bruteforce/internal/app"
+	"github.com/ids79/anti-bruteforce/internal/storage"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -17,9 +23,9 @@ func init() {
 }
 
 type notifyTest struct {
-	conn *sqlx.DB
-	// responseStatusCode int
-	// responseBody       []byte
+	conn               *sqlx.DB
+	responseStatusCode int
+	responseBody       []byte
 }
 
 func panicOnErr(err error) {
@@ -49,19 +55,16 @@ func (test *notifyTest) stopPG(ctx context.Context, sc *godog.Scenario, err erro
 	return ctx, nil
 }
 
-/* func (test *notifyTest) iSendRequestTo(httpMethod, addr string) (err error) {
-	var r *http.Response
-
-	switch httpMethod {
-	case http.MethodGet:
-		r, err = http.Get(addr)
-	default:
-		err = fmt.Errorf("unknown method: %s", httpMethod)
+func (test *notifyTest) iSendRequestTo(httpMethod, addr string) (err error) {
+	if httpMethod != http.MethodGet {
+		err = fmt.Errorf(" unknown method: %s", httpMethod)
+		return
 	}
-
+	r, err := http.Get(addr)
 	if err != nil {
 		return
 	}
+	defer r.Body.Close()
 	test.responseStatusCode = r.StatusCode
 	test.responseBody, err = io.ReadAll(r.Body)
 	return
@@ -69,54 +72,67 @@ func (test *notifyTest) stopPG(ctx context.Context, sc *godog.Scenario, err erro
 
 func (test *notifyTest) theResponseCodeShouldBe(code int) error {
 	if test.responseStatusCode != code {
-		return fmt.Errorf("unexpected status code: %d != %d", test.responseStatusCode, code)
+		return fmt.Errorf(" unexpected status code: %d != %d", test.responseStatusCode, code)
 	}
 	return nil
 }
 
 func (test *notifyTest) theResponseShouldMatchText(text string) error {
 	if string(test.responseBody) != text {
-		return fmt.Errorf("unexpected text: %s != %s", test.responseBody, text)
+		return fmt.Errorf(" unexpected text: %s != %s", test.responseBody, text)
 	}
 	return nil
 }
 
-func (test *notifyTest) iSendRequestToWithData(httpMethod, addr, contentType string,
-	                                           data *messages.PickleDocString) (err error) {
-	var r *http.Response
-
-	switch httpMethod {
-	case http.MethodPost:
-		replacer := strings.NewReplacer("\n", "", "\t", "")
-		cleanJson := replacer.Replace(data.Content)
-		r, err = http.Post(addr, contentType, bytes.NewReader([]byte(cleanJson)))
-	default:
-		err = fmt.Errorf("unknown method: %s", httpMethod)
+func (test *notifyTest) theResponseShouldMatch(answer int) error {
+	if int(test.responseBody[0]) != answer {
+		return fmt.Errorf(" unexpected answer:  %d != %d", test.responseBody[0], answer)
 	}
+	return nil
+}
 
+func (test *notifyTest) existInWhiteBlacklist(ip, mask, list string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	defer cancel()
+	item, err := app.GetIPRange(ip, mask)
 	if err != nil {
-		return
+		return err
 	}
-	test.responseStatusCode = r.StatusCode
-	test.responseBody, err = io.ReadAll(r.Body)
-	return
-}
-
-func (test *notifyTest) iReceiveEventWithText(text string) error {
+	var query string
+	if list == "whitelist" {
+		query = `select * from whitelist where ip = :ip and mask = :mask and ipfrom = :ipfrom and ipto = :ipto`
+	} else if list == "blacklist" {
+		query = `select * from blacklist where ip = :ip and mask = :mask and ipfrom = :ipfrom and ipto = :ipto`
+	}
+	rows, err := test.conn.NamedQueryContext(ctx, query, item)
+	if err != nil {
+		return err
+	}
+	if rows.Next() {
+		var it storage.IPItem
+		err := rows.StructScan(&it)
+		if err != nil {
+			return err
+		}
+		if item != it {
+			return fmt.Errorf(" unexpected data: %v != %v", item, it)
+		}
+	} else {
+		return fmt.Errorf(" data was not found in the %s", list)
+	}
 	return nil
-}*/
+}
 
 func InitializeScenario(s *godog.ScenarioContext) {
 	test := new(notifyTest)
 
 	s.Before(test.startPB)
 
-	// s.Step(`^I send "([^"]*)" request to "([^"]*)"$`, test.iSendRequestTo)
-	// s.Step(`^The response code should be (\d+)$`, test.theResponseCodeShouldBe)
-	// s.Step(`^The response should match text "([^"]*)"$`, test.theResponseShouldMatchText)
-
-	// s.Step(`^I send "([^"]*)" request to "([^"]*)" with "([^"]*)" data:$`, test.iSendRequestToWithData)
-	// s.Step(`^I receive event with text "([^"]*)"$`, test.iReceiveEventWithText)
+	s.Step(`^I send "([^"]*)" request to "([^"]*)"$`, test.iSendRequestTo)
+	s.Step(`^The response code should be (\d+)$`, test.theResponseCodeShouldBe)
+	s.Step(`^The response should match text "([^"]*)"$`, test.theResponseShouldMatchText)
+	s.Step(`^IP "(\d+\.\d+\.\d+\.\d+)" and mask "(\d+)" exist in "([^"]*)"$`, test.existInWhiteBlacklist)
+	s.Step(`^The response should match ([0-1])$`, test.theResponseShouldMatch)
 
 	s.After(test.stopPG)
 }

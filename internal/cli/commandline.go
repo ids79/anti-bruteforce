@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/ids79/anti-bruteforce/internal/app"
-	"github.com/ids79/anti-bruteforce/internal/config"
-	"github.com/ids79/anti-bruteforce/internal/logger"
 	"github.com/ids79/anti-bruteforce/internal/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -18,17 +16,15 @@ import (
 )
 
 type CLI struct {
-	logg   logger.Logg
 	client pb.CLiApiClient
 }
 
-func NewCLI(logg logger.Logg, conf *config.Config) *CLI {
-	conn, err := grpc.Dial(conf.GRPCServer.Address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func NewCLI(address string) *CLI {
+	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		logg.Error(err)
+		fmt.Println(err)
 	}
 	return &CLI{
-		logg:   logg,
 		client: pb.NewCLiApiClient(conn),
 	}
 }
@@ -45,7 +41,7 @@ func (c *CLI) Start(ctx context.Context) {
 		default:
 			if !inScanner.Scan() {
 				if inScanner.Err() != nil {
-					c.logg.Error(inScanner.Err())
+					fmt.Println(inScanner.Err())
 					break
 				}
 			}
@@ -160,14 +156,14 @@ func (c *CLI) performCommand(command string, params []string) {
 		ctx = setMetadata(ctx, "get white list")
 		list, err := c.client.GetList(ctx, &pb.TypeList{Type: "w"})
 		if err != nil {
-			c.logg.Error(err)
+			fmt.Println(err)
 		}
 		printList(IPFormPBtoApp(list))
 	case "getb":
 		ctx = setMetadata(ctx, "get black list")
 		list, err := c.client.GetList(ctx, &pb.TypeList{Type: "b"})
 		if err != nil {
-			c.logg.Error(err)
+			fmt.Println(err)
 		}
 		printList(IPFormPBtoApp(list))
 	default:

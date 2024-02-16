@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -76,6 +77,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/get-list/":
 		s.getList(w, r)
 	default:
+		s.logg.Info("request not found: ", r.URL.Path)
 		http.NotFound(w, r)
 	}
 }
@@ -170,6 +172,7 @@ func (s *Server) auth(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	} else if ok {
+		s.logg.Info(fmt.Sprintf("ip: %s is in blacklist", ipStr))
 		w.Write([]byte{0b0})
 		return
 	}
@@ -177,6 +180,7 @@ func (s *Server) auth(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	} else if ok {
+		s.logg.Info(fmt.Sprintf("ip: %s is in whitelist", ipStr))
 		w.Write([]byte{0b1})
 		return
 	}
@@ -196,8 +200,10 @@ func (s *Server) auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if ipOK && loginOK && passOK {
+		s.logg.Info(fmt.Sprintf("success verification for ip: %s, login: %s, pass: %s", ipStr, login, pass))
 		w.Write([]byte{0b1})
 	} else {
+		s.logg.Info(fmt.Sprintf("failed verification for ip: %s, login: %s, pass: %s", ipStr, login, pass))
 		w.Write([]byte{0b0})
 	}
 }
