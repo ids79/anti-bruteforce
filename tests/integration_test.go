@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/netip"
 	"os"
 	"time"
 
 	"github.com/cucumber/godog"
-	"github.com/ids79/anti-bruteforce/internal/app"
-	"github.com/ids79/anti-bruteforce/internal/storage"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -94,28 +93,30 @@ func (test *notifyTest) theResponseShouldMatch(answer int) error {
 func (test *notifyTest) existInWhiteBlacklist(ip, mask, list string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
-	item, err := app.GetIPRange(ip, mask)
+	ipMask := ip + "/" + mask
+	ipNet, err := netip.ParsePrefix(ipMask)
 	if err != nil {
 		return err
 	}
 	var query string
 	if list == "whitelist" {
-		query = `select * from whitelist where ip = :ip and mask = :mask and ipfrom = :ipfrom and ipto = :ipto`
+		query = `select * from whitelist where ip = $1`
 	} else if list == "blacklist" {
-		query = `select * from blacklist where ip = :ip and mask = :mask and ipfrom = :ipfrom and ipto = :ipto`
+		query = `select * from blacklist where ip = $1`
 	}
-	rows, err := test.conn.NamedQueryContext(ctx, query, item)
+	rows, err := test.conn.QueryContext(ctx, query, ipNet.Masked())
 	if err != nil {
 		return err
 	}
 	if rows.Next() {
-		var it storage.IPItem
-		err := rows.StructScan(&it)
+		var ip string
+		err := rows.Scan(&ip)
 		if err != nil {
 			return err
 		}
-		if item != it {
-			return fmt.Errorf(" unexpected data: %v != %v", item, it)
+		ipMask = ipNet.Masked().String()
+		if ipMask != ip {
+			return fmt.Errorf(" unexpected data: %v != %v", ipMask, ip)
 		}
 	} else {
 		return fmt.Errorf(" data was not found in the %s", list)

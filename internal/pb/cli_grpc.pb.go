@@ -31,9 +31,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CLiApiClient interface {
-	AddWhite(ctx context.Context, in *IPMask, opts ...grpc.CallOption) (*Responce, error)
+	AddWhite(ctx context.Context, in *IP, opts ...grpc.CallOption) (*Responce, error)
 	DelWhite(ctx context.Context, in *IP, opts ...grpc.CallOption) (*Responce, error)
-	AddBlack(ctx context.Context, in *IPMask, opts ...grpc.CallOption) (*Responce, error)
+	AddBlack(ctx context.Context, in *IP, opts ...grpc.CallOption) (*Responce, error)
 	DelBlack(ctx context.Context, in *IP, opts ...grpc.CallOption) (*Responce, error)
 	ResetBacket(ctx context.Context, in *Backet, opts ...grpc.CallOption) (*Responce, error)
 	GetList(ctx context.Context, in *TypeList, opts ...grpc.CallOption) (*List, error)
@@ -47,7 +47,7 @@ func NewCLiApiClient(cc grpc.ClientConnInterface) CLiApiClient {
 	return &cLiApiClient{cc}
 }
 
-func (c *cLiApiClient) AddWhite(ctx context.Context, in *IPMask, opts ...grpc.CallOption) (*Responce, error) {
+func (c *cLiApiClient) AddWhite(ctx context.Context, in *IP, opts ...grpc.CallOption) (*Responce, error) {
 	out := new(Responce)
 	err := c.cc.Invoke(ctx, CLiApi_AddWhite_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -65,7 +65,7 @@ func (c *cLiApiClient) DelWhite(ctx context.Context, in *IP, opts ...grpc.CallOp
 	return out, nil
 }
 
-func (c *cLiApiClient) AddBlack(ctx context.Context, in *IPMask, opts ...grpc.CallOption) (*Responce, error) {
+func (c *cLiApiClient) AddBlack(ctx context.Context, in *IP, opts ...grpc.CallOption) (*Responce, error) {
 	out := new(Responce)
 	err := c.cc.Invoke(ctx, CLiApi_AddBlack_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -105,9 +105,9 @@ func (c *cLiApiClient) GetList(ctx context.Context, in *TypeList, opts ...grpc.C
 // All implementations must embed UnimplementedCLiApiServer
 // for forward compatibility
 type CLiApiServer interface {
-	AddWhite(context.Context, *IPMask) (*Responce, error)
+	AddWhite(context.Context, *IP) (*Responce, error)
 	DelWhite(context.Context, *IP) (*Responce, error)
-	AddBlack(context.Context, *IPMask) (*Responce, error)
+	AddBlack(context.Context, *IP) (*Responce, error)
 	DelBlack(context.Context, *IP) (*Responce, error)
 	ResetBacket(context.Context, *Backet) (*Responce, error)
 	GetList(context.Context, *TypeList) (*List, error)
@@ -118,13 +118,13 @@ type CLiApiServer interface {
 type UnimplementedCLiApiServer struct {
 }
 
-func (UnimplementedCLiApiServer) AddWhite(context.Context, *IPMask) (*Responce, error) {
+func (UnimplementedCLiApiServer) AddWhite(context.Context, *IP) (*Responce, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddWhite not implemented")
 }
 func (UnimplementedCLiApiServer) DelWhite(context.Context, *IP) (*Responce, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DelWhite not implemented")
 }
-func (UnimplementedCLiApiServer) AddBlack(context.Context, *IPMask) (*Responce, error) {
+func (UnimplementedCLiApiServer) AddBlack(context.Context, *IP) (*Responce, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddBlack not implemented")
 }
 func (UnimplementedCLiApiServer) DelBlack(context.Context, *IP) (*Responce, error) {
@@ -150,7 +150,7 @@ func RegisterCLiApiServer(s grpc.ServiceRegistrar, srv CLiApiServer) {
 }
 
 func _CLiApi_AddWhite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IPMask)
+	in := new(IP)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func _CLiApi_AddWhite_Handler(srv interface{}, ctx context.Context, dec func(int
 		FullMethod: CLiApi_AddWhite_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CLiApiServer).AddWhite(ctx, req.(*IPMask))
+		return srv.(CLiApiServer).AddWhite(ctx, req.(*IP))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -186,7 +186,7 @@ func _CLiApi_DelWhite_Handler(srv interface{}, ctx context.Context, dec func(int
 }
 
 func _CLiApi_AddBlack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IPMask)
+	in := new(IP)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -198,7 +198,7 @@ func _CLiApi_AddBlack_Handler(srv interface{}, ctx context.Context, dec func(int
 		FullMethod: CLiApi_AddBlack_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CLiApiServer).AddBlack(ctx, req.(*IPMask))
+		return srv.(CLiApiServer).AddBlack(ctx, req.(*IP))
 	}
 	return interceptor(ctx, in, info, handler)
 }

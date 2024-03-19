@@ -2,8 +2,10 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 	"embed"
 	"errors"
+	"net/netip"
 	"time"
 
 	"github.com/ids79/anti-bruteforce/internal/config"
@@ -17,15 +19,15 @@ var ErrIPAlreadyExistInWhiteRange = errors.New("this IP is already exist in whit
 var ErrIPAlreadyExistInBlackRange = errors.New("this IP is already exist in black range")
 
 type Storage interface {
-	AddWhiteList(ctx context.Context, item IPItem) error
-	DelWhiteList(ctx context.Context, ip int) error
-	AddBlackList(ctx context.Context, item IPItem) error
-	DelBlackList(ctx context.Context, ip int) error
-	IsInWhiteList(ctx context.Context, ip int) (bool, error)
-	IsInBlackList(ctx context.Context, ip int) (bool, error)
-	GetBlackList(ctx context.Context) ([]IPItem, error)
-	GetWhiteList(ctx context.Context) ([]IPItem, error)
-	Close(logg logger.Logg) error
+	AddWhiteList(ctx context.Context, ip netip.Prefix) error
+	DelWhiteList(ctx context.Context, ip netip.Prefix) error
+	AddBlackList(ctx context.Context, ip netip.Prefix) error
+	DelBlackList(ctx context.Context, ip netip.Prefix) error
+	IsInWhiteList(ctx context.Context, ip netip.Addr) (bool, error)
+	IsInBlackList(ctx context.Context, ip netip.Addr) (bool, error)
+	GetBlackList(ctx context.Context) ([]string, error)
+	GetWhiteList(ctx context.Context) ([]string, error)
+	Close(logg logger.Logg)
 }
 
 type storage struct {
@@ -33,34 +35,26 @@ type storage struct {
 	conn    *sqlx.DB
 }
 
-type IPItem struct {
-	IP     int
-	Mask   int
-	IPfrom int
-	IPto   int
-}
-
-func New(logg logger.Logg, config config.Config) (Storage, error) {
+func New(config *config.Config) (Storage, error) {
 	stor := &storage{
 		connStr: config.Database.ConnectString,
 	}
-	err := stor.connect(logg)
+	err := stor.connect()
 	if err != nil {
 		return nil, err
 	}
-	err = stor.migration(logg)
+	err = stor.migration()
 	if err != nil {
 		return nil, err
 	}
 	return stor, nil
 }
 
-func (s *storage) connect(logg logger.Logg) (err error) {
+func (s *storage) connect() (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
 	defer cancel()
 	s.conn, err = sqlx.ConnectContext(ctx, "pgx", s.connStr)
 	if err != nil {
-		logg.Error("cannot connect to base psql: ", err)
 		return err
 	}
 	return s.conn.Ping()
@@ -69,55 +63,46 @@ func (s *storage) connect(logg logger.Logg) (err error) {
 //go:embed migrations/*.sql
 var embedMigrations embed.FS
 
-func (s *storage) migration(logg logger.Logg) error {
+func (s *storage) migration() error {
 	goose.SetBaseFS(embedMigrations)
 	if err := goose.SetDialect("postgres"); err != nil {
-		logg.Error("Data migration failed with an error: ", err)
 		return err
 	}
 	// if err := goose.Down(s.conn.DB, "migrations"); err != nil {
-	// 	s.logg.Error("Data migration failed with an error: ", err)
 	// 	return err
 	// }
 	if err := goose.Up(s.conn.DB, "migrations"); err != nil {
-		logg.Error("Data migration failed with an error: ", err)
 		return err
 	}
-	logg.Info("Data migration was successful")
 	return nil
 }
 
-func (s *storage) Close(logg logger.Logg) error {
+func (s *storage) Close(logg logger.Logg) {
 	if err := s.conn.DB.Close(); err != nil {
 		logg.Error(err)
-		return err
+		return
 	}
 	logg.Info("connect to storage is closed")
-	return nil
 }
 
-func (s *storage) AddWhiteList(ctx context.Context, item IPItem) error {
-	query := `select * from blacklist where ipfrom <= $1 and ipto >= $1`
-	rows, err := s.conn.QueryContext(ctx, query, item.IP)
-	if err != nil {
-		return err
-	}
-	if rows.Next() {
+func (s *storage) AddWhiteList(ctx context.Context, ip netip.Prefix) error {
+	query := `select * from blacklist where ip  >>= $1`
+	if s.conn.QueryRowContext(ctx, query, ip).Scan() != sql.ErrNoRows {
 		return ErrIPAlreadyExistInBlackRange
 	}
-	err = s.DelWhiteList(ctx, item.IP)
+	err := s.DelWhiteList(ctx, ip)
 	if err != nil {
 		return err
 	}
-	query = `insert into whitelist (ip, mask, ipfrom, ipto) values(:ip, :mask, :ipfrom, :ipto)`
-	_, err = s.conn.NamedQueryContext(ctx, query, item)
+	query = `insert into whitelist (ip) values($1)`
+	_, err = s.conn.ExecContext(ctx, query, ip)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *storage) DelWhiteList(ctx context.Context, ip int) error {
+func (s *storage) DelWhiteList(ctx context.Context, ip netip.Prefix) error {
 	query := `delete from whitelist where ip = $1`
 	_, err := s.conn.ExecContext(ctx, query, ip)
 	if err != nil {
@@ -126,28 +111,24 @@ func (s *storage) DelWhiteList(ctx context.Context, ip int) error {
 	return nil
 }
 
-func (s *storage) AddBlackList(ctx context.Context, item IPItem) error {
-	query := `select * from whitelist where ipfrom <= $1 and ipto >= $1`
-	rows, err := s.conn.QueryContext(ctx, query, item.IP)
-	if err != nil {
-		return err
-	}
-	if rows.Next() {
+func (s *storage) AddBlackList(ctx context.Context, ip netip.Prefix) error {
+	query := `select * from whitelist where ip  >>= $1`
+	if s.conn.QueryRowContext(ctx, query, ip).Scan() != sql.ErrNoRows {
 		return ErrIPAlreadyExistInWhiteRange
 	}
-	err = s.DelBlackList(ctx, item.IP)
+	err := s.DelBlackList(ctx, ip)
 	if err != nil {
 		return err
 	}
-	query = `insert into blacklist (ip, mask, ipfrom, ipto) values(:ip, :mask, :ipfrom, :ipto)`
-	_, err = s.conn.NamedQueryContext(ctx, query, item)
+	query = `insert into blacklist (ip) values($1)`
+	_, err = s.conn.ExecContext(ctx, query, ip)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *storage) DelBlackList(ctx context.Context, ip int) error {
+func (s *storage) DelBlackList(ctx context.Context, ip netip.Prefix) error {
 	query := `delete from blacklist where ip = $1`
 	_, err := s.conn.ExecContext(ctx, query, ip)
 	if err != nil {
@@ -156,8 +137,8 @@ func (s *storage) DelBlackList(ctx context.Context, ip int) error {
 	return nil
 }
 
-func (s *storage) IsInWhiteList(ctx context.Context, ip int) (bool, error) {
-	query := `select * from whitelist where ipfrom <= $1 and ipto >= $1`
+func (s *storage) IsInWhiteList(ctx context.Context, ip netip.Addr) (bool, error) {
+	query := `select * from whitelist where ip >>= $1`
 	rows, err := s.conn.QueryContext(ctx, query, ip)
 	if err != nil {
 		return false, err
@@ -165,8 +146,8 @@ func (s *storage) IsInWhiteList(ctx context.Context, ip int) (bool, error) {
 	return rows.Next(), nil
 }
 
-func (s *storage) IsInBlackList(ctx context.Context, ip int) (bool, error) {
-	query := `select * from blacklist where ipfrom <= $1 and ipto >= $1`
+func (s *storage) IsInBlackList(ctx context.Context, ip netip.Addr) (bool, error) {
+	query := `select * from blacklist where ip >>= $1`
 	rows, err := s.conn.QueryContext(ctx, query, ip)
 	if err != nil {
 		return false, err
@@ -174,35 +155,37 @@ func (s *storage) IsInBlackList(ctx context.Context, ip int) (bool, error) {
 	return rows.Next(), nil
 }
 
-func getRows(rows *sqlx.Rows) ([]IPItem, error) {
-	list := make([]IPItem, 0)
+func getRows(rows *sqlx.Rows) ([]string, error) {
+	list := make([]string, 0)
 	for rows.Next() {
-		var ipem IPItem
-		err := rows.StructScan(&ipem)
+		var ip string
+		err := rows.Scan(&ip)
 		if err != nil {
 			return nil, err
 		}
-		list = append(list, ipem)
+		list = append(list, ip)
 	}
 	return list, nil
 }
 
-func (s *storage) GetWhiteList(ctx context.Context) ([]IPItem, error) {
-	query := `select * from whitelist`
+func (s *storage) GetWhiteList(ctx context.Context) ([]string, error) {
+	query := `select ip from whitelist`
 	selection, err := s.conn.NamedQueryContext(ctx, query, map[string]interface{}{})
 	if err != nil {
 		return nil, err
 	}
+	defer selection.Close()
 	rows, err := getRows(selection)
 	return rows, err
 }
 
-func (s *storage) GetBlackList(ctx context.Context) ([]IPItem, error) {
-	query := `select * from blacklist`
+func (s *storage) GetBlackList(ctx context.Context) ([]string, error) {
+	query := `select ip from blacklist`
 	selection, err := s.conn.NamedQueryContext(ctx, query, map[string]interface{}{})
 	if err != nil {
 		return nil, err
 	}
+	defer selection.Close()
 	rows, err := getRows(selection)
 	return rows, err
 }

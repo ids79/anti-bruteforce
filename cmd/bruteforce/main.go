@@ -3,12 +3,16 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 
 	"github.com/ids79/anti-bruteforce/internal/app"
+	"github.com/ids79/anti-bruteforce/internal/app/inmem"
+	"github.com/ids79/anti-bruteforce/internal/app/inredis"
 	"github.com/ids79/anti-bruteforce/internal/config"
 	"github.com/ids79/anti-bruteforce/internal/logger"
 	internalgrpc "github.com/ids79/anti-bruteforce/internal/server/grpc"
@@ -38,14 +42,27 @@ func main() {
 	defer cancel()
 
 	wg := sync.WaitGroup{}
-	config := config.NewConfig(configFile)
-	logg := logger.New(config.Logger, "Anti-bruteforce:")
-	storage, err := storage.New(logg, config)
+	config, err := config.NewConfig(configFile)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "%W", err)
 		return
 	}
-	backets := app.NewBackets(ctx, logg, &config)
-	iplist := app.NewIPList(storage, logg, &config)
+	logg := logger.New(config.Logger, "Anti-bruteforce:")
+	storage, err := storage.New(config)
+	if err != nil {
+		logg.Error("psql initial error: ", err)
+		return
+	}
+	var backets app.WorkWithBackets
+	if strings.Compare(config.ExpireBase, "in_mem") == 0 {
+		backets = inmem.NewBackets(ctx, logg, config)
+	} else if strings.Compare(config.ExpireBase, "in_radis") == 0 {
+		backets = inredis.NewBackets(logg, config)
+		if backets == nil {
+			return
+		}
+	}
+	iplist := app.NewIPList(storage, logg, config)
 	serverHTTP := internalhttp.NewServer(backets, iplist, logg, config)
 	serverGRPC := internalgrpc.NewServer(backets, iplist, logg, config)
 	logg.Info("anti-bruteforce is running...")

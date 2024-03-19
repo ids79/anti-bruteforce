@@ -29,7 +29,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
-	cli := cli.NewCLI(address)
+	cli := cli.New(address)
 	go cli.Start(ctx)
 
 	<-ctx.Done()
