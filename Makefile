@@ -41,9 +41,6 @@ up: docker-compose --project-directory . -f ./deployments/docker-compose.yml up 
 
 down: docker-compose --project-directory . -f ./deployments/docker-compose.yml down	
 
-version: build
-	$(BIN)/bruteforce version
-	
 test:
 	go test -race ./internal/... ./cmd/...
 
@@ -58,5 +55,8 @@ install-goose:
 
 lint: install-lint-deps
 	golangci-lint run ./...
+
+version: build
+	$(BIN)/bruteforce version
 
 PHONY: build run build-img run-img version test lint
