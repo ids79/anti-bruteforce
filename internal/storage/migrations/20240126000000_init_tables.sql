@@ -1,15 +1,9 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE table whitelist (
-    ip              numeric,
-    mask            numeric,
-    ipfrom          numeric,
-    ipto            numeric);
+    ip              cidr);
 CREATE table blacklist (
-    ip              numeric,
-    mask            numeric,
-    ipfrom          numeric,
-    ipto            numeric);
+    ip              cidr);
 -- +goose StatementEnd
 
 -- +goose Down

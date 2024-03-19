@@ -10,3 +10,5 @@ services:
         condition: service_started 
       pg:     
         condition: service_healthy
+      rs:     
+        condition: service_healthy    

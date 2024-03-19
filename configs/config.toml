@@ -1,10 +1,11 @@
 expire-limit = 60
 tick-interval = 500
+expire_base = "in_radis"
 
 [bruteforce-limits]
-n = 10
-m = 100
-k = 1000
+try-for-login = 10
+try-for-pass = 100
+try-for-ip = 1000
 
 [logger]
 level = "INFO"
@@ -18,3 +19,7 @@ address = "0.0.0.0:8081"
 
 [grpc-server]
 address = "0.0.0.0:5051"
+
+[redis]
+address = "rs:6379"
+pass = "29102087"

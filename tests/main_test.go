@@ -3,12 +3,14 @@ package tests
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/cucumber/godog"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func TestMain(m *testing.M) {
+	time.Sleep(time.Second * 3)
 	status := godog.TestSuite{
 		Name:                "integration",
 		ScenarioInitializer: InitializeScenario,

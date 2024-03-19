@@ -22,7 +22,7 @@ run: build
 	$(BIN)/bruteforce -config ./configs/config.toml
 
 run-c:
-	$(BIN)/cli -config ./configs/config.toml	
+	$(BIN)/cli -grpc 0.0.0.0:5051	
 
 build-img:
 	docker build \

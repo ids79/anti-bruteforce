@@ -9,9 +9,9 @@ Feature: Email notification sending
 	I want to receive event from notifications queue
 
 	Scenario: Add to whitelist
-		When I send "GET" request to "http://host.docker.internal:8081/add-white-list/?ip=10.10.10.100&mask=25"
+		When I send "GET" request to "http://host.docker.internal:8081/add-white-list/?ip=10.10.10.100/25"
 		Then The response code should be 200
-		And The response should match text "IP was added in the white list"
+		And The response should match text "IP was added in the list white"
 		Then IP "10.10.10.100" and mask "25" exist in "whitelist"
 		When I send "GET" request to "http://host.docker.internal:8081/auth/?ip=10.10.10.100&login=ids&pass=123"
 		Then The response code should be 200
@@ -29,9 +29,9 @@ Feature: Email notification sending
 		And The response should match 1		
 
 	Scenario: Add to blacklist
-		When I send "GET" request to "http://host.docker.internal:8081/add-black-list/?ip=10.10.20.100&mask=25"
+		When I send "GET" request to "http://host.docker.internal:8081/add-black-list/?ip=10.10.20.100/25"
 		Then The response code should be 200
-		And The response should match text "IP was added in the black list"
+		And The response should match text "IP was added in the list black"
 		Then IP "10.10.20.100" and mask "25" exist in "blacklist"
 		When I send "GET" request to "http://host.docker.internal:8081/auth/?ip=10.10.20.50&login=ids&pass=123"
 		Then The response code should be 200

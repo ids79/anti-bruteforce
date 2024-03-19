@@ -1,4 +1,4 @@
-version: "1.0"
+version: "2.0"
 services:
   pg:
     image: postgres:latest
@@ -14,7 +14,24 @@ services:
       retries: 5
       start_period: 25s 
     volumes:
-    - ./deployments/sql:/docker-entrypoint-initdb.d   
+      - ./deployments/sql:/docker-entrypoint-initdb.d  
+  rs:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PORT=6379
+      - REDIS_DATABASES=1   
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --pass 29102087 ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 5   
+    volumes:
+      - ./deployments/redis/init.sh:/init.sh
+    entrypoint: bash -c "/init.sh"
   bruteforce:
     build:
       context: ./
@@ -23,6 +40,8 @@ services:
     depends_on:
       pg:     
         condition: service_healthy 
+      rs:     
+        condition: service_healthy       
     ports:
       - 8081:8081
       - 5051:5051

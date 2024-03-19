@@ -10,6 +10,7 @@ import (
 	"github.com/ids79/anti-bruteforce/internal/config"
 	"github.com/ids79/anti-bruteforce/internal/logger"
 	"github.com/ids79/anti-bruteforce/internal/pb"
+	"github.com/ids79/anti-bruteforce/internal/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -25,12 +26,12 @@ type Server struct {
 	conf    *config.Config
 }
 
-func NewServer(backets *app.Backets, iplist *app.IPList, logg logger.Logg, config config.Config) *Server {
+func NewServer(backets app.WorkWithBackets, iplist *app.IPList, logg logger.Logg, config *config.Config) *Server {
 	return &Server{
 		logg:    logg,
 		backets: backets,
 		iplist:  iplist,
-		conf:    &config,
+		conf:    config,
 	}
 }
 
@@ -60,79 +61,67 @@ func (s *Server) Close() {
 	s.ls.Close()
 }
 
-func (s *Server) AddWhite(ctx context.Context, req *pb.IPMask) (*pb.Responce, error) {
-	_ = ctx
-	err := s.iplist.AddWhiteList(req.IP, req.Mask)
-	switch {
-	case err == nil:
-		return &pb.Responce{Result: "IP was added in the white list"}, nil
-	default:
-		return &pb.Responce{Result: err.Error()}, status.Errorf(codes.InvalidArgument, "Invalid parameters")
+func (s *Server) AddWhite(ctx context.Context, req *pb.IP) (*pb.Responce, error) {
+	err := s.iplist.AddWhiteList(ctx, req.IP)
+	if err != nil {
+		s.logg.Error("grpc, AddWhite: ", err)
+		if errors.Is(err, storage.ErrIPAlreadyExistInBlackRange) {
+			return &pb.Responce{Result: err.Error()}, nil
+		}
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid parameters")
 	}
+	return &pb.Responce{Result: "IP was added in the white list"}, nil
 }
 
-func (s *Server) DelWhite(ctx context.Context, ip *pb.IP) (*pb.Responce, error) {
-	_ = ctx
-	err := s.iplist.DelWhiteList(ip.IP)
-	switch {
-	case err == nil:
-		return &pb.Responce{Result: "IP was deleted from the white list"}, nil
-	default:
+func (s *Server) DelWhite(ctx context.Context, req *pb.IP) (*pb.Responce, error) {
+	err := s.iplist.DelWhiteList(ctx, req.IP)
+	if err != nil {
+		s.logg.Error("grpc, DelWhite: ", err)
 		return &pb.Responce{Result: err.Error()}, status.Errorf(codes.InvalidArgument, "Invalid parameters")
 	}
+	return &pb.Responce{Result: "IP was deleted from the white list"}, nil
 }
 
-func (s *Server) AddBlack(ctx context.Context, req *pb.IPMask) (*pb.Responce, error) {
-	_ = ctx
-	err := s.iplist.AddBlackList(req.IP, req.Mask)
-	switch {
-	case err == nil:
-		return &pb.Responce{Result: "IP was added in the black list"}, nil
-	default:
-		return &pb.Responce{Result: err.Error()}, status.Errorf(codes.InvalidArgument, "Invalid parameters")
+func (s *Server) AddBlack(ctx context.Context, req *pb.IP) (*pb.Responce, error) {
+	err := s.iplist.AddBlackList(ctx, req.IP)
+	if err != nil {
+		s.logg.Error("grpc, AddBlack: ", err)
+		if errors.Is(err, storage.ErrIPAlreadyExistInWhiteRange) {
+			return &pb.Responce{Result: err.Error()}, nil
+		}
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid parameters")
 	}
+	return &pb.Responce{Result: "IP was added in the black list"}, nil
 }
 
-func (s *Server) DelBlack(ctx context.Context, ip *pb.IP) (*pb.Responce, error) {
-	_ = ctx
-	err := s.iplist.DelBlackList(ip.IP)
-	switch {
-	case err == nil:
-		return &pb.Responce{Result: "IP was deleted from the black list"}, nil
-	default:
+func (s *Server) DelBlack(ctx context.Context, req *pb.IP) (*pb.Responce, error) {
+	err := s.iplist.DelBlackList(ctx, req.IP)
+	if err != nil {
+		s.logg.Error("grpc, DelBlack: ", err)
 		return &pb.Responce{Result: err.Error()}, status.Errorf(codes.InvalidArgument, "Invalid parameters")
 	}
+	return &pb.Responce{Result: "IP was deleted from the black list"}, nil
 }
 
 func (s *Server) ResetBacket(ctx context.Context, backet *pb.Backet) (*pb.Responce, error) {
-	_ = ctx
 	if app.BacketType(backet.Type) == app.IP {
-		if _, err := app.IPtoInt(backet.Backet); err != nil {
-			s.logg.Error(err)
-			return &pb.Responce{Result: err.Error()}, status.Errorf(codes.InvalidArgument, "Invalid parameters")
+		if ip := net.ParseIP(backet.Backet); ip == nil {
+			s.logg.Error("resetBucket: ", backet.Backet, " - parse IP error")
+			return &pb.Responce{Result: "parse IP error"}, status.Errorf(codes.InvalidArgument, "Invalid parameters")
 		}
 	}
-	if errors.Is(s.backets.ResetBacket(backet.Backet, app.BacketType(backet.Type)), app.ErrBacketNotFound) {
+	err := s.backets.ResetBacket(ctx, backet.Backet, app.BacketType(backet.Type))
+	if errors.Is(err, app.ErrBacketNotFound) {
+		s.logg.Error("grpc, ResetBacket: ", err)
 		return &pb.Responce{Result: fmt.Sprintf("%s backet not found", backet.Type)}, nil
+	} else if errors.Is(err, app.ErrContextWasExpire) {
+		s.logg.Error("grpc, ResetBacket: ", err)
+		return &pb.Responce{Result: fmt.Sprintf("%s context was expire", backet.Type)}, nil
 	}
 	return &pb.Responce{Result: fmt.Sprintf("%s backet was reset", backet.Type)}, nil
 }
 
-func IPFormApptoPB(list []app.IPItem) *pb.List {
-	l := make([]*pb.IPitem, len(list))
-	for i, it := range list {
-		l[i] = &pb.IPitem{
-			IP:     it.IP,
-			Mask:   it.Mask,
-			IPfrom: it.IPfrom,
-			IPto:   it.IPto,
-		}
-	}
-	return &pb.List{Items: l}
-}
-
 func (s *Server) GetList(ctx context.Context, tipe *pb.TypeList) (*pb.List, error) {
-	_ = ctx
-	list := s.iplist.GetList(tipe.Type)
-	return IPFormApptoPB(list), nil
+	list := s.iplist.GetList(ctx, tipe.Type)
+	return &pb.List{Items: list}, nil
 }

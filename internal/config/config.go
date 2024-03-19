@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	"errors"
 	"os"
 
 	"github.com/BurntSushi/toml"
@@ -15,9 +15,11 @@ type Config struct {
 	Database     DBConf           `toml:"database"`
 	HTTPServer   HTTP             `toml:"http-server"`
 	GRPCServer   GRPC             `toml:"grpc-server"`
+	Redis        REDIS            `toml:"redis"`
 	Limits       BruteforceLimits `toml:"bruteforce-limits"`
 	TickInterval int              `toml:"tick-interval"`
 	ExpireLimit  int              `toml:"expire-limit"`
+	ExpireBase   string           `toml:"expire_base"`
 }
 
 type LoggerConf struct {
@@ -37,21 +39,26 @@ type GRPC struct {
 	Address string `toml:"address"`
 }
 
-type BruteforceLimits struct {
-	N int `toml:"n"`
-	M int `toml:"m"`
-	K int `toml:"k"`
+type REDIS struct {
+	Address  string `toml:"address"`
+	Password string `toml:"pass"`
 }
 
-func NewConfig(configFile string) Config {
+type BruteforceLimits struct {
+	TryForLogin int `toml:"try-for-login"`
+	TryForPass  int `toml:"try-for-pass"`
+	TreyForIP   int `toml:"try-for-ip"`
+}
+
+func NewConfig(configFile string) (*Config, error) {
 	var c Config
 	tomlFile, err := os.ReadFile(configFile)
 	if err != nil {
-		log.Fatal("error reading the configuration file")
+		return nil, errors.New("error reading the configuration file")
 	}
 	_, err = toml.Decode(string(tomlFile), &c)
 	if err != nil {
-		log.Fatal("error decode the configuration file")
+		return nil, errors.New("error decode the configuration file")
 	}
 	if c.Logger.Level == "" {
 		c.Logger.Level = "ERROR"
@@ -59,5 +66,5 @@ func NewConfig(configFile string) Config {
 	if c.Logger.LogEncoding == "" {
 		c.Logger.LogEncoding = "console"
 	}
-	return c
+	return &c, nil
 }
