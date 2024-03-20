@@ -72,7 +72,6 @@ func printList(list []string) {
 func setMetadata(ctx context.Context, method string) context.Context {
 	md := metadata.New(nil)
 	md.Set("method", method)
-	fmt.Println(method)
 	return metadata.NewOutgoingContext(ctx, md)
 }
 
