@@ -31,38 +31,38 @@ func TestBackets(t *testing.T) {
 	t.Run("test access verification", func(t *testing.T) {
 		for i := 1; i < config.Limits.TreyForIP; i++ {
 			chek, err := backets.AccessVerification("127.0.0.10", IP)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.True(t, chek)
 
 			if i < config.Limits.TryForLogin {
 				chek, err = backets.AccessVerification("ids", LOGIN)
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.True(t, chek)
 			}
 			if i < config.Limits.TryForPass {
 				chek, err = backets.AccessVerification("123", PASSWORD)
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.True(t, chek)
 			}
 		}
 		chek, err := backets.AccessVerification("127.0.0.10", IP)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.False(t, chek)
 		chek, err = backets.AccessVerification("ids", LOGIN)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.False(t, chek)
 		chek, err = backets.AccessVerification("123", PASSWORD)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.False(t, chek)
 		time.Sleep(time.Second * 2)
 		chek, err = backets.AccessVerification("127.0.0.10", IP)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.True(t, chek)
 		chek, err = backets.AccessVerification("ids", LOGIN)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.True(t, chek)
 		chek, err = backets.AccessVerification("123", PASSWORD)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.True(t, chek)
 	})
 

@@ -19,7 +19,7 @@ type Config struct {
 	Limits       BruteforceLimits `toml:"bruteforce-limits"`
 	TickInterval int              `toml:"tick-interval"`
 	ExpireLimit  int              `toml:"expire-limit"`
-	ExpireBase   string           `toml:"expire_base"`
+	ExpireBase   string           `toml:"expire-base"`
 }
 
 type LoggerConf struct {

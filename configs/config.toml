@@ -1,6 +1,6 @@
 expire-limit = 60
 tick-interval = 500
-expire_base = "in_radis"
+expire-base = "in_redis"
 
 [bruteforce-limits]
 try-for-login = 10
